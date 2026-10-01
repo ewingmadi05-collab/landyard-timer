@@ -1,13 +1,20 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lanyard Timer</title>
+
   <style>
     body {
       font-family: Arial, sans-serif;
       text-align: center;
-      padding-top: 80px;
+      padding-top: 60px;
       background: #f4f0ff;
+    }
+
+    h1 {
+      font-size: 32px;
     }
 
     #timer {
@@ -16,61 +23,80 @@
       margin: 30px;
     }
 
-    button {
-      font-size: 25px;
-      padding: 15px 35px;
-      border-radius: 15px;
-      border: none;
-      cursor: pointer;
+    #status {
+      font-size: 22px;
+      margin: 20px;
     }
   </style>
 </head>
 
 <body>
 
-  <h1>⏱️ My Timer</h1>
+  <h1>⏱️ Lanyard Timer</h1>
 
   <div id="timer">00:00:00</div>
 
-  <button onclick="toggleTimer()" id="button">
-    START
-  </button>
+  <div id="status">Loading...</div>
 
   <script>
-    let startTime = null;
-    let running = false;
-    let interval;
+    let running = localStorage.getItem("running") === "true";
+    let startTime = Number(localStorage.getItem("startTime")) || 0;
+    let totalTime = Number(localStorage.getItem("totalTime")) || 0;
 
-    function updateTimer() {
-      if (!startTime) return;
+    function update() {
+      let elapsed = totalTime;
 
-      let elapsed = Date.now() - startTime;
+      if (running) {
+        elapsed += Date.now() - startTime;
+      }
 
-      let hours = Math.floor(elapsed / 3600000);
-      let minutes = Math.floor((elapsed % 3600000) / 60000);
-      let seconds = Math.floor((elapsed % 60000) / 1000);
+      let seconds = Math.floor(elapsed / 1000);
+
+      let hours = Math.floor(seconds / 3600);
+      seconds %= 3600;
+
+      let minutes = Math.floor(seconds / 60);
+      seconds %= 60;
 
       document.getElementById("timer").textContent =
         String(hours).padStart(2, "0") + ":" +
         String(minutes).padStart(2, "0") + ":" +
         String(seconds).padStart(2, "0");
+
+      document.getElementById("status").textContent =
+        running ? "🟢 TIMER RUNNING" : "🔴 TIMER STOPPED";
     }
 
     function toggleTimer() {
-      if (!running) {
+
+      if (running) {
+        totalTime += Date.now() - startTime;
+
+        running = false;
+
+        localStorage.setItem("totalTime", totalTime);
+        localStorage.setItem("running", "false");
+
+      } else {
         startTime = Date.now();
+
         running = true;
 
-        document.getElementById("button").textContent = "STOP";
-
-        interval = setInterval(updateTimer, 1000);
-      } else {
-        running = false;
-        clearInterval(interval);
-
-        document.getElementById("button").textContent = "START";
+        localStorage.setItem("startTime", startTime);
+        localStorage.setItem("running", "true");
       }
+
+      update();
     }
+
+    /*
+      Every time the QR-code webpage is opened,
+      automatically switch between START and STOP.
+    */
+    toggleTimer();
+
+    setInterval(update, 500);
+
   </script>
 
 </body>
